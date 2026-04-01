@@ -1,14 +1,14 @@
 $(".header").click(function () {
 
     $header = $(this);
-    //getting the next element
+    //获取下一个元素
     $content = $header.next();
-    //open up the content needed - toggle the slide- if visible, slide up, if not slidedown.
+    //打开所需的内容 - 切换滑动 - 如果可见，向上滑动，如果不可见则向下滑动。
     $content.slideToggle(500, function () {
-        //execute this after slideToggle is done
-        //change text of header based on visibility of content div
+        //在slideToggle完成后执行此操作
+        //根据内容div的可见性更改标题文本
         $header.text(function () {
-            //change text based on condition
+            //根据条件更改文本
             return $content.is(":visible") ? "Collapse" : "Expand";
         });
     });

@@ -2,10 +2,10 @@
 ---
 
 /*
- * This file controls what is imported from /_sass
+ * 此文件控制从/_sass导入的内容
  *
- * Note that the files are processed in the order they are imported, so they are partly
-   sorted by the dependencies. Also, the first two lines of the file are required by Jekyll.
+ * 注意文件按照导入的顺序处理，因此它们部分
+ * 按依赖关系排序。此外，文件的前两行是Jekyll必需的。
  */
 
 @import
@@ -39,5 +39,4 @@
 
     "vendor/font-awesome/fontawesome",
     "vendor/font-awesome/solid",
-    "vendor/font-awesome/brands"
-;
+    "vendor/font-awesome/brands";

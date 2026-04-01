@@ -1,134 +1,159 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Publications markdown generator for academicpages
-# 
-# Takes a set of bibtex of publications and converts them for use with [academicpages.github.io](academicpages.github.io). This is an interactive Jupyter notebook ([see more info here](http://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/what_is_jupyter.html)). 
-# 
-# The core python code is also in `pubsFromBibs.py`. 
-# Run either from the `markdown_generator` folder after replacing updating the publist dictionary with:
-# * bib file names
-# * specific venue keys based on your bib file preferences
-# * any specific pre-text for specific files
-# * Collection Name (future feature)
-# 
-# TODO: Make this work with other databases of citations, 
-# TODO: Merge this with the existing TSV parsing solution
+# # 用于academicpages的出版物markdown生成器
+#
+# 接收一组出版物的bibtex，并将其转换为可用于[academicpages.github.io](academicpages.github.io)的格式。
+# 这是一个交互式Jupyter notebook（[更多信息请点击这里](http://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/what_is_jupyter.html)）。
+#
+# 核心Python代码也在`pubsFromBibs.py`中。
+# 从`markdown_generator`文件夹运行，在更新publist字典后，包含：
+# * bib文件名
+# * 基于你的bib文件偏好的特定venue键
+# * 特定文件的任何特定前置文本
+# * 集合名称（未来功能）
+#
+# TODO：使其能够与其他引用数据库一起工作，
+# TODO：将其与现有的TSV解析解决方案合并
 
 
 from pybtex.database.input import bibtex
-import pybtex.database.input.bibtex 
+import pybtex.database.input.bibtex
 from time import strptime
 import string
 import html
 import os
 import re
 
-#todo: incorporate different collection types rather than a catch all publications, requires other changes to template
+# todo：整合不同的集合类型，而不是一个包罗万象的出版物，需要对模板进行其他更改
 publist = {
     "proceeding": {
-        "file" : "proceedings.bib",
+        "file": "proceedings.bib",
         "venuekey": "booktitle",
         "venue-pretext": "In the proceedings of ",
-        "collection" : {"name":"publications",
-                        "permalink":"/publication/"}
-        
+        "collection": {"name": "publications", "permalink": "/publication/"},
     },
-    "journal":{
+    "journal": {
         "file": "pubs.bib",
-        "venuekey" : "journal",
-        "venue-pretext" : "",
-        "collection" : {"name":"publications",
-                        "permalink":"/publication/"}
-    } 
+        "venuekey": "journal",
+        "venue-pretext": "",
+        "collection": {"name": "publications", "permalink": "/publication/"},
+    },
 }
 
-html_escape_table = {
-    "&": "&amp;",
-    '"': "&quot;",
-    "'": "&apos;"
-    }
+html_escape_table = {"&": "&amp;", '"': "&quot;", "'": "&apos;"}
+
 
 def html_escape(text):
-    """Produce entities within text."""
-    return "".join(html_escape_table.get(c,c) for c in text)
+    """在文本中生成实体。"""
+    return "".join(html_escape_table.get(c, c) for c in text)
 
 
 for pubsource in publist:
     parser = bibtex.Parser()
     bibdata = parser.parse_file(publist[pubsource]["file"])
 
-    #loop through the individual references in a given bibtex file
+    # 循环遍历给定bibtex文件中的单个引用
     for bib_id in bibdata.entries:
-        #reset default date
+        # 重置默认日期
         pub_year = "1900"
         pub_month = "01"
         pub_day = "01"
-        
-        b = bibdata.entries[bib_id].fields
-        
-        try:
-            pub_year = f'{b["year"]}'
 
-            #todo: this hack for month and day needs some cleanup
-            if "month" in b.keys(): 
-                if(len(b["month"])<3):
-                    pub_month = "0"+b["month"]
+        b = bibdata.entries[bib_id].fields
+
+        try:
+            pub_year = f"{b['year']}"
+
+            # todo：这个月份和日期的hack需要一些清理
+            if "month" in b.keys():
+                if len(b["month"]) < 3:
+                    pub_month = "0" + b["month"]
                     pub_month = pub_month[-2:]
-                elif(b["month"] not in range(12)):
-                    tmnth = strptime(b["month"][:3],'%b').tm_mon   
-                    pub_month = "{:02d}".format(tmnth) 
+                elif b["month"] not in range(12):
+                    tmnth = strptime(b["month"][:3], "%b").tm_mon
+                    pub_month = "{:02d}".format(tmnth)
                 else:
                     pub_month = str(b["month"])
-            if "day" in b.keys(): 
+            if "day" in b.keys():
                 pub_day = str(b["day"])
 
-                
-            pub_date = pub_year+"-"+pub_month+"-"+pub_day
-            
-            #strip out {} as needed (some bibtex entries that maintain formatting)
-            clean_title = b["title"].replace("{", "").replace("}","").replace("\\","").replace(" ","-")    
+            pub_date = pub_year + "-" + pub_month + "-" + pub_day
+
+            # 根据需要去除{}（一些维护格式的bibtex条目）
+            clean_title = (
+                b["title"]
+                .replace("{", "")
+                .replace("}", "")
+                .replace("\\", "")
+                .replace(" ", "-")
+            )
 
             url_slug = re.sub("\\[.*\\]|[^a-zA-Z0-9_-]", "", clean_title)
-            url_slug = url_slug.replace("--","-")
+            url_slug = url_slug.replace("--", "-")
 
-            md_filename = (str(pub_date) + "-" + url_slug + ".md").replace("--","-")
-            html_filename = (str(pub_date) + "-" + url_slug).replace("--","-")
+            md_filename = (str(pub_date) + "-" + url_slug + ".md").replace("--", "-")
+            html_filename = (str(pub_date) + "-" + url_slug).replace("--", "-")
 
-            #Build Citation from text
+            # 从文本构建引用
             citation = ""
 
-            #citation authors - todo - add highlighting for primary author?
+            # 引用作者 - todo - 为主要作者添加高亮？
             for author in bibdata.entries[bib_id].persons["author"]:
-                citation = citation+" "+author.first_names[0]+" "+author.last_names[0]+", "
+                citation = (
+                    citation
+                    + " "
+                    + author.first_names[0]
+                    + " "
+                    + author.last_names[0]
+                    + ", "
+                )
 
-            #citation title
-            citation = citation + "\"" + html_escape(b["title"].replace("{", "").replace("}","").replace("\\","")) + ".\""
+            # 引用标题
+            citation = (
+                citation
+                + '"'
+                + html_escape(
+                    b["title"].replace("{", "").replace("}", "").replace("\\", "")
+                )
+                + '."'
+            )
 
-            #add venue logic depending on citation type
-            venue = publist[pubsource]["venue-pretext"]+b[publist[pubsource]["venuekey"]].replace("{", "").replace("}","").replace("\\","")
+            # 根据引用类型添加venue逻辑
+            venue = publist[pubsource]["venue-pretext"] + b[
+                publist[pubsource]["venuekey"]
+            ].replace("{", "").replace("}", "").replace("\\", "")
 
             citation = citation + " " + html_escape(venue)
             citation = citation + ", " + pub_year + "."
 
-            
-            ## YAML variables
-            md = "---\ntitle: \""   + html_escape(b["title"].replace("{", "").replace("}","").replace("\\","")) + '"\n'
-            
-            md += """collection: """ +  publist[pubsource]["collection"]["name"]
+            ## YAML变量
+            md = (
+                '---\ntitle: "'
+                + html_escape(
+                    b["title"].replace("{", "").replace("}", "").replace("\\", "")
+                )
+                + '"\n'
+            )
 
-            md += """\npermalink: """ + publist[pubsource]["collection"]["permalink"]  + html_filename
-            
+            md += """collection: """ + publist[pubsource]["collection"]["name"]
+
+            md += (
+                """\npermalink: """
+                + publist[pubsource]["collection"]["permalink"]
+                + html_filename
+            )
+
             note = False
             if "note" in b.keys():
                 if len(str(b["note"])) > 5:
                     md += "\nexcerpt: '" + html_escape(b["note"]) + "'"
                     note = True
 
-            md += "\ndate: " + str(pub_date) 
+            md += "\ndate: " + str(pub_date)
 
             md += "\nvenue: '" + html_escape(venue) + "'"
-            
+
             url = False
             if "url" in b.keys():
                 if len(str(b["url"])) > 5:
@@ -139,22 +164,35 @@ for pubsource in publist:
 
             md += "\n---"
 
-            
-            ## Markdown description for individual page
+            ## 单个页面的Markdown描述
             if note:
                 md += "\n" + html_escape(b["note"]) + "\n"
 
             if url:
-                md += "\n[Access paper here](" + b["url"] + "){:target=\"_blank\"}\n" 
+                md += "\n[Access paper here](" + b["url"] + '){:target="_blank"}\n'
             else:
-                md += "\nUse [Google Scholar](https://scholar.google.com/scholar?q="+html.escape(clean_title.replace("-","+"))+"){:target=\"_blank\"} for full citation"
+                md += (
+                    "\nUse [Google Scholar](https://scholar.google.com/scholar?q="
+                    + html.escape(clean_title.replace("-", "+"))
+                    + '){:target="_blank"} for full citation'
+                )
 
             md_filename = os.path.basename(md_filename)
 
-            with open("../_publications/" + md_filename, 'w', encoding="utf-8") as f:
+            with open("../_publications/" + md_filename, "w", encoding="utf-8") as f:
                 f.write(md)
-            print(f'SUCCESSFULLY PARSED {bib_id}: \"', b["title"][:60],"..."*(len(b['title'])>60),"\"")
-        # field may not exist for a reference
+            print(
+                f'成功解析 {bib_id}: "',
+                b["title"][:60],
+                "..." * (len(b["title"]) > 60),
+                '"',
+            )
+        # 引用可能不存在某个字段
         except KeyError as e:
-            print(f'WARNING Missing Expected Field {e} from entry {bib_id}: \"', b["title"][:30],"..."*(len(b['title'])>30),"\"")
+            print(
+                f'警告缺少预期字段 {e} 来自条目 {bib_id}: "',
+                b["title"][:30],
+                "..." * (len(b["title"]) > 30),
+                '"',
+            )
             continue

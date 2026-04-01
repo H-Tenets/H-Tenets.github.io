@@ -1,11 +1,11 @@
-# The following is the order of the links in the header of the website.
+# 以下是网站标题中链接的顺序。
 #
-# Changing the order here will adjust the order and you can also add additional
-# links. Removing a link prevents it from showing in the header, but does not
-# prevent it from being included in the site.
+# 在此处更改顺序将调整顺序，您也可以添加其他
+# 链接。删除链接会阻止其在标题中显示，但不会
+# 阻止其包含在站点中。
 #
-# NOTE that only one of the CV options should be selected, the first is for the
-#      Markdown formatted page while the second is generated using JSON.
+# 注意应该只选择一个CV选项，第一个是用于
+#      Markdown格式的页面，而第二个是使用JSON生成的。
 
 main:
   - title: "Publications"

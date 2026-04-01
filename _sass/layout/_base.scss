@@ -1,14 +1,14 @@
 /* ==========================================================================
-   BASE ELEMENTS
+   基础元素
    ========================================================================== */
 html {
-  /* sticky footer fix */
+  /* 粘性页脚修复 */
   position: relative;
   min-height: 100%;
 }
 
 body {
-  /* Set via _themes.scss */
+  /* 通过_themes.scss设置 */
   color: var(--global-text-color);
   background-color: var(--global-bg-color);
 
@@ -19,7 +19,7 @@ body {
   line-height: 1.5;
 
   &.overflow--hidden {
-    /* when primary navigation is visible, the content in the background won't scroll */
+    /* 当主导航可见时，背景中的内容不会滚动 */
     overflow: hidden;
   }
 }

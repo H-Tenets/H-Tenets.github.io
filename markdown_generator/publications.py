@@ -1,46 +1,45 @@
-# Publications markdown generator for AcademicPages
+# 用于AcademicPages的出版物markdown生成器
 # 
-# Takes a TSV / CSV of publications with metadata and converts them for use with [academicpages.github.io](academicpages.github.io). 
-# Can be called via the command prompt by using `python3 publications.py [filename]`.
+# 接收包含元数据的出版物TSV/CSV文件，并将其转换为可用于[academicpages.github.io](academicpages.github.io)的格式。
+# 可以通过命令提示符使用`python3 publications.py [filename]`来调用。
 
-# Data format
+# 数据格式
 # 
-# The file needs to have the following columns as a header at the top:
+# 文件需要在顶部包含以下列作为标题：
 # pub_date, title, venue, excerpt, citation, url_slug, paper_url, slides_url
-# - `excerpt`, `paper_url`, and slides_url can be blank, but the others must have values. 
-# - `pub_date` must be formatted as YYYY-MM-DD.
-# - `url_slug` will be the descriptive part of the .md file and the permalink URL for the page about the paper. 
-#    The .md file will be `YYYY-MM-DD-[url_slug].md` and the permalink will be `https://[yourdomain]/publications/YYYY-MM-DD-[url_slug]`
+# - `excerpt`、`paper_url`和slides_url可以为空，但其他字段必须有值。
+# - `pub_date`必须格式化为YYYY-MM-DD。
+# - `url_slug`将是.md文件的描述性部分和论文页面permalink URL的一部分。
+#    .md文件将是`YYYY-MM-DD-[url_slug].md`，permalink将是`https://[yourdomain]/publications/YYYY-MM-DD-[url_slug]`
 import csv
 import os
 import sys
 
-# Flag to indicate an error occurred
+# 指示发生错误的标志
 EXIT_ERROR = 0
 
-# The expected layout of the CSV / TSV file
+# CSV/TSV文件的预期布局
 HEADER_LEGACY  = ['pub_date', 'title', 'venue', 'excerpt', 'citation', 'url_slug', 'paper_url', 'slides_url']
 HEADER_UPDATED = ['pub_date', 'title', 'venue', 'excerpt', 'citation', 'url_slug', 'paper_url', 'slides_url', 'category']
 
-# YAML is very picky about how it takes a valid string, so we are replacing single and double quotes (and ampersands)
-# with their HTML encoded equivalents. This makes them look not so readable in raw format, but they are parsed and
-# rendered nicely.
+# YAML对如何接受有效字符串非常挑剔，所以我们将单引号和双引号（以及和号）
+# 替换为它们的HTML编码等价物。这使它们在原始格式中看起来不太可读，但它们被很好地解析和渲染。
 HTML_ESCAPE_TABLE = {
     "&": "&amp;",
     '"': "&quot;",
     "'": "&apos;"
     }
 
-# This is where the heavy lifting is done. This loops through all the rows in the TSV dataframe, then starts to
-# concatenate a big string (```md```) that contains the markdown for each type. It does the YAML metadata first, then
-# does the description for the individual page.
+# 这是繁重工作完成的地方。这循环遍历TSV数据框中的所有行，然后开始
+# 连接一个大字符串（```md```），其中包含每种类型的markdown。它首先做YAML元数据，然后
+# 做单个页面的描述。
 def create_md(lines: list, layout: list):
     for item in lines:
-        # Parse the filename information
+        # 解析文件名信息
         md_filename = f"{item[layout.index('pub_date')]}-{item[layout.index('url_slug')]}.md"
         html_filename = str(item[layout.index('pub_date')]) + "-" + item[layout.index('url_slug')]
         
-        # Parse the YAML variables
+        # 解析YAML变量
         md = f"---\ntitle: \"{item[layout.index('title')]}\"\n"
         md += "collection: publications"
         if len(layout) == len(HEADER_UPDATED):
@@ -57,26 +56,26 @@ def create_md(lines: list, layout: list):
         md += f"\ncitation: '{html_escape(item[layout.index('citation')])}'"
         md += "\n---"
         
-        # Markdown description for individual page
+        # 单个页面的Markdown描述
         if len(str(item[layout.index('paper_url')])) > 5:
-            md += f"\n<a href='{item[layout.index('paper_url')]}'>Download paper here</a>\n"
+            md += f"\n<a href='{item[layout.index('paper_url')}'>Download paper here</a>\n"
         if len(str(item[layout.index('excerpt')])) > 5:
             md += f"\n{html_escape(item[layout.index('excerpt')])}\n"
         md += f"\nRecommended citation: {item[layout.index('citation')]}"
         
-        # Write the file
+        # 写入文件
         md_filename = os.path.join("../_publications/", os.path.basename(md_filename))
         with open(md_filename, 'w') as f:
             f.write(md)
 
 def html_escape(text):
-    """Produce entities within text."""
+    """在文本中生成实体。"""
     return "".join(HTML_ESCAPE_TABLE.get(c,c) for c in text)
 
 def read(filename: str) -> tuple[list, list]:
-    '''Read the contents of the file, check the header and return the parsed line along with the file type.'''
+    '''读取文件的内容，检查标题并返回解析的行以及文件类型。'''
 
-    # Read the contents of the file
+    # 读取文件的内容
     lines = []
     with open(filename, 'r') as file:
         delimiter = ',' if filename.endswith('.csv') else '\t'
@@ -84,36 +83,36 @@ def read(filename: str) -> tuple[list, list]:
         for row in reader:
             lines.append(row)
 
-    # Verify the file format makes sense
+    # 验证文件格式是否合理
     if len(lines) <= 1:
-        print(f'Not enough lines in the file to process, found {len(lines)}', file=sys.stderr)
+        print(f'文件中的行数不足以处理，找到 {len(lines)} 行', file=sys.stderr)
         sys.exit(EXIT_ERROR)
 
-    # Verify the header, remove it once checked
+    # 验证标题，检查后删除
     layout = HEADER_UPDATED
     if HEADER_LEGACY == lines[0]:
         layout = HEADER_LEGACY
     elif HEADER_UPDATED != lines[0]:
         print(lines[0])
-        print('The header of the file does not match the expected format', file=sys.stderr)
+        print('文件的标题与预期格式不匹配', file=sys.stderr)
         sys.exit(EXIT_ERROR)
     lines = lines[1:]
     
-    # Return the lines and format
+    # 返回行和格式
     return lines, layout
 
 if __name__ == '__main__':
-    # Make sure a filename was given
+    # 确保提供了文件名
     if len(sys.argv) != 2:
-        print('Usage: python3 publications.py [filename]', file=sys.stderr)
+        print('用法：python3 publications.py [filename]', file=sys.stderr)
         sys.exit(EXIT_ERROR)
 
-    # Make sure the filename is TSV or CSV
+    # 确保文件名是TSV或CSV
     filename = sys.argv[1]
     if not (filename.endswith('.csv') or filename.endswith('.tsv')):
-        print(f'Expected a TSV or CSV file, got {filename}', file=sys.stderr)
+        print(f'期望TSV或CSV文件，得到 {filename}', file=sys.stderr)
         sys.exit(EXIT_ERROR)    
 
-    # Read and process the lines
+    # 读取并处理行
     lines, layout = read(filename)
     create_md(lines, layout)
